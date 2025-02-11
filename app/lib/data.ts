@@ -14,7 +14,7 @@ export async function fetchRevenue() {
   try {
     const supabase = await createClient();
 
-    const { data: revenue } = await supabase.from('revenue').select();
+    const { data: revenue } = await supabase.from('revenue').select('*') as { data: Revenue[] };
 
     return revenue;
   } catch (error) {
