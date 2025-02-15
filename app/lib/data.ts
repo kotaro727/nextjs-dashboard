@@ -13,8 +13,10 @@ import { formatCurrency, createClient } from './utils';
 export async function fetchRevenue() {
   try {
     const supabase = await createClient();
-
+    console.log('Fetching revenue data...');
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const { data: revenue } = await supabase.from('revenue').select('*');
+    console.log('Data fetch completed after 3 seconds.');
 
     return revenue ?? [];
   } catch (error) {
@@ -27,6 +29,7 @@ export async function fetchLatestInvoices() {
   try {
     const supabase = await createClient();
 
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     const { data, error } = await supabase
       .from('invoices')
       .select('amount, customers(name, image_url, email), id')
