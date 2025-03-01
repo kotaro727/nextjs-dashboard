@@ -1,13 +1,6 @@
-import { sql } from '@vercel/postgres';
-import {
-  CustomerField,
-  CustomersTableType,
-  InvoiceForm,
-  InvoicesTable,
-  LatestInvoiceRaw,
-  Revenue,
-} from './definitions';
-import { formatCurrency, createClient } from './utils';
+import {sql} from '@vercel/postgres';
+import {CustomerField, CustomersTableType, InvoiceForm,} from './definitions';
+import {createClient, formatCurrency} from './utils';
 
 
 export async function fetchRevenue() {
@@ -103,32 +96,32 @@ export async function fetchFilteredInvoices(
   currentPage: number,
 ) {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-
   try {
-    const invoices = await sql<InvoicesTable>`
-      SELECT
-        invoices.id,
-        invoices.amount,
-        invoices.date,
-        invoices.status,
-        customers.name,
-        customers.email,
-        customers.image_url
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      WHERE
-        customers.name ILIKE ${`%${query}%`} OR
-        customers.email ILIKE ${`%${query}%`} OR
-        invoices.amount::text ILIKE ${`%${query}%`} OR
-        invoices.date::text ILIKE ${`%${query}%`} OR
-        invoices.status ILIKE ${`%${query}%`}
-      ORDER BY invoices.date DESC
-      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
-    `;
+    const supabase = await createClient();
+    // @ts-ignore
+    const { data, error } = await supabase.rpc('fetch_filtered_invoices3', {
+      search_query: query,
+      offset_value: offset,
+      limit_value: ITEMS_PER_PAGE,
+    }) as { id: string; amount: number; date: string; status: string; customer_name: string; customer_email: string; customer_image_url: string }[];
 
-    return invoices.rows;
+    if (error) {
+      console.error('Database Error:', error);
+      throw error;
+    }
+
+    // data は返り値の配列となるので、必要に応じて整形
+    return data.map((invoice: any) => ({
+      id: invoice.id,
+      amount: invoice.amount,
+      date: invoice.date,
+      status: invoice.status,
+      name: invoice.customer_name,
+      email: invoice.customer_email,
+      image_url: invoice.customer_image_url,
+    }));
   } catch (error) {
-    console.error('Database Error:', error);
+    console.error('Failed to fetch invoices:', error);
     throw new Error('Failed to fetch invoices.');
   }
 }
