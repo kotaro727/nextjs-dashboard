@@ -91,27 +91,50 @@ export async function fetchCardData() {
 }
 
 const ITEMS_PER_PAGE = 6;
+
+// 返り値の型を定義
+interface FilteredInvoice {
+  id: string;
+  amount: number;
+  date: string;
+  status: string;
+  name: string;
+  email: string;
+  image_url: string;
+}
+
 export async function fetchFilteredInvoices(
   query: string,
   currentPage: number,
-) {
+): Promise<FilteredInvoice[]> {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
   try {
     const supabase = await createClient();
-    // @ts-ignore
-    const { data, error } = await supabase.rpc('fetch_filtered_invoices3', {
+
+    // Supabaseからの戻り値の型を定義
+    interface RawInvoice {
+      id: string;
+      amount: number;
+      date: string;
+      status: string;
+      customer_name: string;
+      customer_email: string;
+      customer_image_url: string;
+    }
+
+    const { data, error } = await (supabase as any).rpc('fetch_filtered_invoices3', {
       search_query: query,
       offset_value: offset,
       limit_value: ITEMS_PER_PAGE,
-    }) as { id: string; amount: number; date: string; status: string; customer_name: string; customer_email: string; customer_image_url: string }[];
+    });
 
     if (error) {
       console.error('Database Error:', error);
       throw error;
     }
 
-    // data は返り値の配列となるので、必要に応じて整形
-    return data.map((invoice: any) => ({
+    // 型安全な変換
+    return (data as RawInvoice[]).map((invoice) => ({
       id: invoice.id,
       amount: invoice.amount,
       date: invoice.date,
