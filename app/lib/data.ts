@@ -1,6 +1,6 @@
-import {sql} from '@vercel/postgres';
-import {CustomerField, CustomersTableType, InvoiceForm,} from './definitions';
-import {createClient, formatCurrency} from './utils';
+import { sql } from '@vercel/postgres';
+import { CustomerField, CustomersTableType, InvoiceForm, } from './definitions';
+import { createClient, formatCurrency } from './utils';
 
 
 export async function fetchRevenue() {
@@ -174,16 +174,18 @@ export async function fetchInvoiceById(id: string) {
 
 export async function fetchCustomers() {
   try {
-    const data = await sql<CustomerField>`
-      SELECT
-        id,
-        name
-      FROM customers
-      ORDER BY name ASC
-    `;
+    const supabase = await createClient();
 
-    const customers = data.rows;
-    return customers;
+    const { data, error } = await supabase
+      .from('customers')
+      .select('id, name')
+      .order('name', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    return data ?? [];
   } catch (err) {
     console.error('Database Error:', err);
     throw new Error('Failed to fetch all customers.');
