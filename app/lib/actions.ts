@@ -61,3 +61,46 @@ export async function createInvoice(formData: FormData) {
         throw new Error('請求書の作成に失敗しました。');
     }
 }
+
+const UpdateInvoice = FormSchema.omit({ id: true, date: true });
+export async function updateInvoice(id: string, formData: FormData) {
+    const { customerId, amount, status } = UpdateInvoice.parse({
+      customerId: formData.get('customerId'),
+      amount: formData.get('amount'),
+      status: formData.get('status'),
+    });
+   
+    const amountInCents = Math.round(amount * 100);
+   
+    try {
+        // Supabaseクライアントを初期化
+        const supabase = await createClient();
+
+        // デバッグ用にIDを確認
+        console.log('更新対象のID:', id);
+
+        // invoicesテーブルのデータを更新
+        const { error, data } = await supabase
+            .from('invoices')
+            .update({
+                customer_id: customerId,
+                amount: amountInCents,
+                status: status
+            })
+            .eq('id', id)
+            .select();
+
+        console.log('更新結果:', data);
+
+        if (error) {
+            console.error('Supabase更新エラー:', error);
+            // throw new Error('請求書の更新に失敗しました。');
+        }
+
+        revalidatePath('/dashboard/invoices');
+        redirect('/dashboard/invoices');
+    } catch (error) {
+        console.error('データベース操作エラー:', error);
+        // throw new Error('請求書の更新に失敗しました。');
+    }
+}
